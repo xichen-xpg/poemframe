@@ -247,6 +247,10 @@ function normalizeTitle(value) {
     .trim();
 }
 
+function safeFileName(title) {
+  return title.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "").trim();
+}
+
 function htmlToText(html) {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
@@ -369,6 +373,8 @@ const sources = {
 
 const missing = [];
 await fs.mkdir(worksDir, { recursive: true });
+const imports = [];
+const entries = [];
 
 for (const [index, work] of works.entries()) {
   const [title, author] = work;
@@ -379,13 +385,19 @@ for (const [index, work] of works.entries()) {
   }
 
   const material = { title, author, fullText };
-  const fileName = `${String(index + 1).padStart(3, "0")}.js`;
+  const variableName = `work${String(index + 1).padStart(3, "0")}`;
+  const fileName = `${safeFileName(title)}.js`;
   const content = `const work = ${JSON.stringify(material, null, 2)};\n\nexport default work;\n`;
   await fs.writeFile(path.join(worksDir, fileName), content, "utf8");
+  imports.push(`import ${variableName} from "./works/${fileName}";`);
+  entries.push(`  ${variableName}`);
 }
 
 if (missing.length) {
   throw new Error(`Missing fullText for: ${missing.join(", ")}`);
 }
+
+const indexContent = `${imports.join("\n")}\n\nexport const gaokaoWorks = [\n${entries.join(",\n")}\n];\n`;
+await fs.writeFile(path.join(repoRoot, "materials", "gaokao_works.js"), indexContent, "utf8");
 
 console.log(`Wrote ${works.length} work files.`);
