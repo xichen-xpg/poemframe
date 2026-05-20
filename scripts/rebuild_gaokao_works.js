@@ -248,7 +248,11 @@ function normalizeTitle(value) {
 }
 
 function safeFileName(title) {
-  return title.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "").trim();
+  return title.replace(/[《》<>:"/\\|?*\u0000-\u001f]/g, "").trim();
+}
+
+function displayTitle(title) {
+  return title.replace(/[《》]/g, "").trim();
 }
 
 function htmlToText(html) {
@@ -377,7 +381,8 @@ const imports = [];
 const entries = [];
 
 for (const [index, work] of works.entries()) {
-  const [title, author] = work;
+  const [rawTitle, author] = work;
+  const title = displayTitle(rawTitle);
   const fullText = pickText(work, sources);
   if (!fullText?.length) {
     missing.push(title);
@@ -386,7 +391,7 @@ for (const [index, work] of works.entries()) {
 
   const material = { title, author, fullText };
   const variableName = `work${String(index + 1).padStart(3, "0")}`;
-  const fileName = `${safeFileName(title)}.js`;
+  const fileName = `${String(index + 1).padStart(3, "0")}.${safeFileName(title)}.js`;
   const content = `const work = ${JSON.stringify(material, null, 2)};\n\nexport default work;\n`;
   await fs.writeFile(path.join(worksDir, fileName), content, "utf8");
   imports.push(`import ${variableName} from "./works/${fileName}";`);

@@ -1,5 +1,5 @@
 const work = {
-  "title": "《列子》一则",
+  "title": "列子一则",
   "author": "列子",
   "fullText": [
     "伯牙善鼓琴，钟子期善听。",
