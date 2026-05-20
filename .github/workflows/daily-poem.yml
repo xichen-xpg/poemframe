@@ -42,7 +42,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "每日古诗词.png"
+          git add "每日古诗词.png" "*.png"
           if git diff --cached --quiet; then
             echo "No poster changes to commit."
             exit 0
