@@ -99,8 +99,13 @@ const dateParts = new Intl.DateTimeFormat("en-CA", {
 }).formatToParts(new Date());
 const dateValue = Object.fromEntries(dateParts.map((part) => [part.type, part.value]));
 const todayKey = `${dateValue.year}-${dateValue.month}-${dateValue.day}`;
-const dayIndex = Math.floor(Date.parse(`${todayKey}T00:00:00Z`) / 86400000);
-const selectedPoem = gaokaoPoems[dayIndex % gaokaoPoems.length];
+const rotationStartKey = process.env.POEM_ROTATION_START_DATE ?? "2026-05-20";
+const dayIndex =
+  Math.floor(
+    (Date.parse(`${todayKey}T00:00:00Z`) - Date.parse(`${rotationStartKey}T00:00:00Z`)) / 86400000
+  );
+const poemIndex = ((dayIndex % gaokaoPoems.length) + gaokaoPoems.length) % gaokaoPoems.length;
+const selectedPoem = gaokaoPoems[poemIndex];
 
 const safeTitle = selectedPoem.title.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "").trim();
 const poemOutputFile = path.join(repoRoot, `${safeTitle}.png`);
