@@ -11,6 +11,7 @@ const apiKey = process.env.OPENAI_API_KEY;
 
 const model = process.env.OPENAI_IMAGE_MODEL ?? "gpt-image-2";
 const generationSize = process.env.OPENAI_IMAGE_SIZE ?? "1280x768";
+const requestTimeoutMs = Number(process.env.OPENAI_IMAGE_TIMEOUT_MS ?? 5 * 60 * 1000);
 const dailyOutputFile = path.join(repoRoot, "每日古诗词.png");
 
 const gaokaoPoems = [
@@ -143,19 +144,23 @@ if (!apiKey) {
   throw new Error("OPENAI_API_KEY is required.");
 }
 
+const controller = new AbortController();
+const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+
 const response = await fetch("https://api.openai.com/v1/images/generations", {
   method: "POST",
   headers: {
     Authorization: `Bearer ${apiKey}`,
     "Content-Type": "application/json"
   },
+  signal: controller.signal,
   body: JSON.stringify({
     model,
     prompt,
     size: generationSize,
     n: 1
   })
-});
+}).finally(() => clearTimeout(timeout));
 
 if (!response.ok) {
   const body = await response.text();
