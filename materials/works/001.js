@@ -1,8 +1,6 @@
 const work = {
   "title": "劝学",
   "author": "荀子",
-  "excerptStart": "君子曰：学不可以已",
-  "excerptEnd": "用心躁也",
   "fullText": [
     "君子曰：学不可以已。",
     "",
