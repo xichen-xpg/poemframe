@@ -1,6 +1,9 @@
 name: Daily Poem Poster
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     - cron: "0 21 * * *"
   workflow_dispatch:
