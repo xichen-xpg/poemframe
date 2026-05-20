@@ -377,8 +377,6 @@ const sources = {
 
 const missing = [];
 await fs.mkdir(worksDir, { recursive: true });
-const imports = [];
-const entries = [];
 
 for (const [index, work] of works.entries()) {
   const [rawTitle, author] = work;
@@ -390,19 +388,13 @@ for (const [index, work] of works.entries()) {
   }
 
   const material = { title, author, fullText };
-  const variableName = `work${String(index + 1).padStart(3, "0")}`;
   const fileName = `${String(index + 1).padStart(3, "0")}.${safeFileName(title)}.js`;
   const content = `const work = ${JSON.stringify(material, null, 2)};\n\nexport default work;\n`;
   await fs.writeFile(path.join(worksDir, fileName), content, "utf8");
-  imports.push(`import ${variableName} from "./works/${fileName}";`);
-  entries.push(`  ${variableName}`);
 }
 
 if (missing.length) {
   throw new Error(`Missing fullText for: ${missing.join(", ")}`);
 }
-
-const indexContent = `${imports.join("\n")}\n\nexport const gaokaoWorks = [\n${entries.join(",\n")}\n];\n`;
-await fs.writeFile(path.join(repoRoot, "materials", "gaokao_works.js"), indexContent, "utf8");
 
 console.log(`Wrote ${works.length} work files.`);
