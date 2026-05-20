@@ -1,11 +1,6 @@
 name: Daily Poem Poster
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/daily-poem.yml"
   schedule:
     - cron: "0 21 * * *"
   workflow_dispatch:
