@@ -1,5 +1,5 @@
 const work = {
-  "title": "赤壁赋二",
+  "title": "赤壁赋",
   "author": "苏轼",
   "fullText": [
     "于是饮酒乐甚，扣舷而歌之。",

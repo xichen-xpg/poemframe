@@ -1,5 +1,5 @@
 const work = {
-  "title": "师说三",
+  "title": "师说",
   "author": "韩愈",
   "fullText": [
     "圣人无常师。",

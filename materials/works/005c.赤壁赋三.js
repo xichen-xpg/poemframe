@@ -1,5 +1,5 @@
 const work = {
-  "title": "赤壁赋三",
+  "title": "赤壁赋",
   "author": "苏轼",
   "fullText": [
     "苏子曰：客亦知夫水与月乎？",

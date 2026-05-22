@@ -1,5 +1,5 @@
 const work = {
-  "title": "劝学一",
+  "title": "劝学",
   "author": "荀子",
   "fullText": [
     "君子曰：学不可以已。",

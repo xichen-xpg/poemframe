@@ -1,5 +1,5 @@
 const work = {
-  "title": "阿房宫赋一",
+  "title": "阿房宫赋",
   "author": "杜牧",
   "fullText": [
     "六王毕，四海一，蜀山兀，阿房出。",
