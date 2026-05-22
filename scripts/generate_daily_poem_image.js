@@ -64,7 +64,8 @@ const requestedWorks = (process.env.POEM_WORKS ?? getArgValue("--work") ?? "")
   .map((name) => name.trim())
   .filter(Boolean);
 const selectedPoems = requestedWorks.length > 0 ? requestedWorks.map(findPoemByName) : [gaokaoPoems[poemIndex]];
-const shouldWriteDailyOutput = requestedWorks.length === 0;
+const shouldWriteDailyOutput =
+  requestedWorks.length === 0 || process.env.UPDATE_DAILY_OUTPUT === "1" || process.argv.includes("--update-daily");
 
 function getPoemOutputFile(selectedPoem) {
   const safeTitle = selectedPoem.title.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "").trim();
@@ -85,7 +86,7 @@ function createPrompt(selectedPoem) {
       : "- 正文范围：使用该篇目的高考常见背诵范围。");
 
   return `
-生成一张古风水墨诗词海报，横版 5:3，最终会缩放为 800x480。
+生成一张极简留白古风水墨诗词海报，分辨率800x480。
 
 篇目：
 - 标题：《${selectedPoem.title}》
@@ -93,20 +94,8 @@ function createPrompt(selectedPoem) {
 ${excerptRangeInstruction}
 
 要求：
-- 只展示标题、作者、正文，不要译文、注释、赏析、英文、拼音、二维码、水印、logo 或日期。
-- 正文必须严格使用给定文本，不要改字、漏字、增字，不要补全整篇原文。
-- 正文中的非空行是自然语义行，空白行是段落分隔；排版时保留这种节奏。
-- 正文横排，从左到右、从上到下阅读，清晰可读。
-- 诗文正文字号适中偏大，保证 800x480 屏幕阅读清晰即可；不要过大，也不要小字密排。
-- 正文使用常见、清晰、端正的中文印刷字体，优先宋体、楷体或仿宋；避免黑体，不要把正文做成花哨书法字。
-- 段落之间可以用短横线、极淡细线或留白作为分隔，短横线分隔是推荐做法。
-- 整体古风、水墨、极简、留白充足，画面干净克制。
-- 背景以接近纯白的干净白底为主，不要偏黄、偏灰或厚重仿古纸色；只允许非常轻微的宣纸纹理。
-- 水墨和意象元素要淡、少、轻，不能让背景变暗或铺满画面。
-- 可以加入一枚小红印章作为点缀，红色只用于印章或极少量 accent。
-- 可根据诗文意境自由安排标题、作者、正文和少量意象元素。
-- 字体和构图由模型自行发挥，但要有诗词海报的审美，不要像普通文档截图。
-- 最终图像必须是一张完整渲染图，不要输出分镜、草图或说明文字。
+- 正文必须严格使用给定文本，不要改字、漏字、增字。
+- 诗文正文字号适中偏大，保证 800x480 屏幕阅读清晰即可。
 `;
 }
 
