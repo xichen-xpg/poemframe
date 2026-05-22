@@ -1,6 +1,9 @@
 name: Daily Poem Poster
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     - cron: "0 21 * * *"
   workflow_dispatch:
@@ -29,6 +32,7 @@ jobs:
         run: npm run generate:daily-poem
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          POEM_WORKS: "劝学二,劝学三,师说一,阿房宫赋四,赤壁赋一,登高"
 
       - name: Commit and push poster
         run: |

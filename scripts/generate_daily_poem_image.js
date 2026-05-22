@@ -1,4 +1,4 @@
-﻿import fs from "node:fs/promises";
+import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { gaokaoWorks } from "../materials/gaokao_works.js";
@@ -16,6 +16,36 @@ const dailyOutputFile = path.join(repoRoot, "每日古诗词.png");
 
 const gaokaoPoems = gaokaoWorks;
 
+function getArgValue(name) {
+  const prefix = `${name}=`;
+  const inlineArg = process.argv.find((arg) => arg.startsWith(prefix));
+  if (inlineArg) return inlineArg.slice(prefix.length);
+
+  const index = process.argv.indexOf(name);
+  if (index !== -1) return process.argv[index + 1];
+
+  return null;
+}
+
+function normalizeLookupValue(value) {
+  return value.replace(/\s+/g, "").replace(/[《》]/g, "").toLowerCase();
+}
+
+function findPoemByName(name) {
+  const normalizedName = normalizeLookupValue(name);
+  const poem = gaokaoPoems.find((candidate) => {
+    const title = normalizeLookupValue(candidate.title);
+    const sourceFile = normalizeLookupValue(candidate.sourceFile ?? "");
+    return title === normalizedName || sourceFile === normalizedName || sourceFile.endsWith(`${normalizedName}.js`);
+  });
+
+  if (!poem) {
+    throw new Error(`Could not find poem: ${name}`);
+  }
+
+  return poem;
+}
+
 const dateParts = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Dubai",
   year: "numeric",
@@ -25,26 +55,34 @@ const dateParts = new Intl.DateTimeFormat("en-CA", {
 const dateValue = Object.fromEntries(dateParts.map((part) => [part.type, part.value]));
 const todayKey = `${dateValue.year}-${dateValue.month}-${dateValue.day}`;
 const rotationStartKey = process.env.POEM_ROTATION_START_DATE ?? "2026-05-20";
-const dayIndex =
-  Math.floor(
-    (Date.parse(`${todayKey}T00:00:00Z`) - Date.parse(`${rotationStartKey}T00:00:00Z`)) / 86400000
-  );
+const dayIndex = Math.floor(
+  (Date.parse(`${todayKey}T00:00:00Z`) - Date.parse(`${rotationStartKey}T00:00:00Z`)) / 86400000
+);
 const poemIndex = ((dayIndex % gaokaoPoems.length) + gaokaoPoems.length) % gaokaoPoems.length;
-const selectedPoem = gaokaoPoems[poemIndex];
+const requestedWorks = (process.env.POEM_WORKS ?? getArgValue("--work") ?? "")
+  .split(",")
+  .map((name) => name.trim())
+  .filter(Boolean);
+const selectedPoems = requestedWorks.length > 0 ? requestedWorks.map(findPoemByName) : [gaokaoPoems[poemIndex]];
+const shouldWriteDailyOutput = requestedWorks.length === 0;
 
-const safeTitle = selectedPoem.title.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "").trim();
-const poemOutputFile = path.join(repoRoot, `${safeTitle}.png`);
-const fullTextInstruction =
-  Array.isArray(selectedPoem.fullText) && selectedPoem.fullText.length > 0
-    ? `- 正文全文：\n${selectedPoem.fullText.map((line) => `  ${line}`).join("\n")}`
-    : null;
-const excerptRangeInstruction =
-  fullTextInstruction ??
-  (selectedPoem.excerptStart && selectedPoem.excerptEnd
-    ? `- 节选范围：从「${selectedPoem.excerptStart}」到「${selectedPoem.excerptEnd}」。`
-    : "- 正文范围：使用该篇目的高考常见背诵范围。");
+function getPoemOutputFile(selectedPoem) {
+  const safeTitle = selectedPoem.title.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "").trim();
+  return path.join(repoRoot, `${safeTitle}.png`);
+}
 
-const prompt = `
+function createPrompt(selectedPoem) {
+  const fullTextInstruction =
+    Array.isArray(selectedPoem.fullText) && selectedPoem.fullText.length > 0
+      ? `- 正文全文：\n${selectedPoem.fullText.map((line) => `  ${line}`).join("\n")}`
+      : null;
+  const excerptRangeInstruction =
+    fullTextInstruction ??
+    (selectedPoem.excerptStart && selectedPoem.excerptEnd
+      ? `- 节选范围：从「${selectedPoem.excerptStart}」到「${selectedPoem.excerptEnd}」。`
+      : "- 正文范围：使用该篇目的高考常见背诵范围。");
+
+  return `
 生成一张完整的中国古诗文海报。
 
 指定篇目：
@@ -64,14 +102,19 @@ ${excerptRangeInstruction}
 - 排版必须稳定、留白充足。
 - 背景与篇目意境一致，典雅、克制、有中国古典审美。
 - 整体画面需要是明亮、清爽、留白充足的浅色氛围，可以用红色、蓝色、黄色作为少量点缀，色彩不要杂乱。
+- 每一篇都要根据正文意象重新设计背景元素和构图，避免与其他海报使用相同背景模板。
 - 最终图像必须是一张已经完成渲染的海报，不要输出分镜、草图或说明文字。
 `;
+}
 
 if (process.argv.includes("--dry-run") || process.env.DRY_RUN === "1") {
-  console.log(`Selected: ${selectedPoem.title} / ${selectedPoem.author}`);
-  console.log(`Daily output: ${dailyOutputFile}`);
-  console.log(`Poem output: ${poemOutputFile}`);
-  console.log(prompt.trim());
+  for (const selectedPoem of selectedPoems) {
+    console.log(`Selected: ${selectedPoem.title} / ${selectedPoem.author}`);
+    if (shouldWriteDailyOutput) console.log(`Daily output: ${dailyOutputFile}`);
+    console.log(`Poem output: ${getPoemOutputFile(selectedPoem)}`);
+    console.log(createPrompt(selectedPoem).trim());
+    console.log("\n---\n");
+  }
   process.exit(0);
 }
 
@@ -79,48 +122,54 @@ if (!apiKey) {
   throw new Error("OPENAI_API_KEY is required.");
 }
 
-const controller = new AbortController();
-const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
-
-const response = await fetch("https://api.openai.com/v1/images/generations", {
-  method: "POST",
-  headers: {
-    Authorization: `Bearer ${apiKey}`,
-    "Content-Type": "application/json"
-  },
-  signal: controller.signal,
-  body: JSON.stringify({
-    model,
-    prompt,
-    size: generationSize,
-    n: 1
-  })
-}).finally(() => clearTimeout(timeout));
-
-if (!response.ok) {
-  const body = await response.text();
-  throw new Error(`OpenAI image generation failed: ${response.status} ${body}`);
-}
-
-const result = await response.json();
-const imageBase64 = result?.data?.[0]?.b64_json;
-if (!imageBase64) {
-  throw new Error("OpenAI image generation response did not include data[0].b64_json.");
-}
-
-const imageBuffer = Buffer.from(imageBase64, "base64");
 const { default: sharp } = await import("sharp");
-const posterBuffer = await sharp(imageBuffer)
-  .resize(800, 480, {
-    fit: "cover",
-    position: "center"
-  })
-  .png()
-  .toBuffer();
 
-await fs.writeFile(dailyOutputFile, posterBuffer);
-await fs.writeFile(poemOutputFile, posterBuffer);
+for (const selectedPoem of selectedPoems) {
+  const prompt = createPrompt(selectedPoem);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
 
-console.log(`Generated ${dailyOutputFile}`);
-console.log(`Generated ${poemOutputFile}`);
+  const response = await fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    signal: controller.signal,
+    body: JSON.stringify({
+      model,
+      prompt,
+      size: generationSize,
+      n: 1
+    })
+  }).finally(() => clearTimeout(timeout));
 
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`OpenAI image generation failed for ${selectedPoem.title}: ${response.status} ${body}`);
+  }
+
+  const result = await response.json();
+  const imageBase64 = result?.data?.[0]?.b64_json;
+  if (!imageBase64) {
+    throw new Error(`OpenAI image generation response for ${selectedPoem.title} did not include data[0].b64_json.`);
+  }
+
+  const imageBuffer = Buffer.from(imageBase64, "base64");
+  const posterBuffer = await sharp(imageBuffer)
+    .resize(800, 480, {
+      fit: "cover",
+      position: "center"
+    })
+    .png()
+    .toBuffer();
+
+  if (shouldWriteDailyOutput) {
+    await fs.writeFile(dailyOutputFile, posterBuffer);
+    console.log(`Generated ${dailyOutputFile}`);
+  }
+
+  const poemOutputFile = getPoemOutputFile(selectedPoem);
+  await fs.writeFile(poemOutputFile, posterBuffer);
+  console.log(`Generated ${poemOutputFile}`);
+}
