@@ -82,9 +82,9 @@ function createPrompt(selectedPoem) {
     throw new Error(`Poem ${selectedPoem.title} is missing fullText.`);
   }
 
-  const fullTextInstruction = `- 正文：\n${selectedPoem.fullText
+  const poemText = selectedPoem.fullText
     .map((line) => (line.trim() ? `  ${line}` : ""))
-    .join("\n")}`;
+    .join("\n");
 
   return `
 生成一张白底设计感古风水墨海报，分辨率800x480。
@@ -92,7 +92,8 @@ function createPrompt(selectedPoem) {
 篇目：
 - 标题：《${selectedPoem.title}》
 - 作者：${selectedPoem.author}
-${fullTextInstruction}
+- 正文：
+${poemText}
 
 要求：
 - 正文必须严格使用给定文本，不要改字、漏字、增字。
@@ -100,6 +101,7 @@ ${fullTextInstruction}
 - 使用左侧竖排大标题 + 作者竖栏 + 小红印 + 中右部横排正文的诗笺式版式。
 - 标题使用国风艺术设计感字体，其他部分使用仿宋字体，诗人名字旁点缀红色印章。
 - 诗文正文字号适中偏大，保证 800x480 屏幕阅读清晰即可。
+- 配图内容需要与正文文义相关，但只选择一种核心意象或场景作为画面主体，不要把正文里的多个物象全部堆在画面里。
 `;
 }
 
