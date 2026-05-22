@@ -68,22 +68,23 @@ const shouldWriteDailyOutput =
   requestedWorks.length === 0 || process.env.UPDATE_DAILY_OUTPUT === "1" || process.argv.includes("--update-daily");
 
 function getPoemOutputFile(selectedPoem) {
-  const safeTitle = selectedPoem.title.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "").trim();
+  const sourceTitle = selectedPoem.sourceFile
+    ?.replace(/\.js$/i, "")
+    .replace(/^\d+[a-z]*\./i, "")
+    .trim();
+  const outputTitle = sourceTitle || selectedPoem.title;
+  const safeTitle = outputTitle.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "").trim();
   return path.join(repoRoot, `${safeTitle}.png`);
 }
 
 function createPrompt(selectedPoem) {
-  const fullTextInstruction =
-    Array.isArray(selectedPoem.fullText) && selectedPoem.fullText.length > 0
-      ? `- 正文全文，按此顺序排版；非空行是自然语义行，空白行是段落分隔：\n${selectedPoem.fullText
-          .map((line) => (line.trim() ? `  ${line}` : ""))
-          .join("\n")}`
-      : null;
-  const excerptRangeInstruction =
-    fullTextInstruction ??
-    (selectedPoem.excerptStart && selectedPoem.excerptEnd
-      ? `- 节选范围：从「${selectedPoem.excerptStart}」到「${selectedPoem.excerptEnd}」。`
-      : "- 正文范围：使用该篇目的高考常见背诵范围。");
+  if (!Array.isArray(selectedPoem.fullText) || selectedPoem.fullText.length === 0) {
+    throw new Error(`Poem ${selectedPoem.title} is missing fullText.`);
+  }
+
+  const fullTextInstruction = `- 正文：\n${selectedPoem.fullText
+    .map((line) => (line.trim() ? `  ${line}` : ""))
+    .join("\n")}`;
 
   return `
 生成一张白底设计感古风水墨海报，分辨率800x480。
@@ -91,13 +92,15 @@ function createPrompt(selectedPoem) {
 篇目：
 - 标题：《${selectedPoem.title}》
 - 作者：${selectedPoem.author}
-${excerptRangeInstruction}
+${fullTextInstruction}
 
 要求：
 - 正文必须严格使用给定文本，不要改字、漏字、增字。
+- 正文必须严格按上方给定文本和顺序排版；非空行是自然语义行，空白行是段落分隔，排版时保留这种节奏。
 - 使用左侧竖排大标题 + 作者竖栏 + 小红印 + 中右部横排正文的诗笺式版式。
 - 标题使用国风艺术设计感字体，其他部分使用仿宋字体，诗人名字旁点缀红色印章。
 - 诗文正文字号适中偏大，保证 800x480 屏幕阅读清晰即可。
+- 配图内容必须与正文内容相关，优先选择正文中出现或直接暗示的意象、场景、物象和情绪，不要使用与诗文无关的泛用山水装饰。
 `;
 }
 
