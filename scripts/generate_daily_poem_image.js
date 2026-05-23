@@ -63,7 +63,13 @@ const requestedWorks = (process.env.POEM_WORKS ?? getArgValue("--work") ?? "")
   .split(",")
   .map((name) => name.trim())
   .filter(Boolean);
-const selectedPoems = requestedWorks.length > 0 ? requestedWorks.map(findPoemByName) : [gaokaoPoems[poemIndex]];
+const priorityPoems = gaokaoPoems.filter((poem) => poem.priority === true);
+const selectedPoems =
+  requestedWorks.length > 0
+    ? requestedWorks.map(findPoemByName)
+    : priorityPoems.length > 0
+      ? [priorityPoems[0]]
+      : [gaokaoPoems[poemIndex]];
 const shouldWriteDailyOutput =
   requestedWorks.length === 0 || process.env.UPDATE_DAILY_OUTPUT === "1" || process.argv.includes("--update-daily");
 
