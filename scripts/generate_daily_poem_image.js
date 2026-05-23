@@ -87,7 +87,7 @@ function createPrompt(selectedPoem) {
     .join("\n");
 
   return `
-帮我给这首古诗文及其现代文译文生成一张 800x480 的古风诗词海报。字要大一点，正文要清楚易读，文字是画面重点。画面简洁，留白多一点。
+帮我给这首古诗文及其译文生成一张 800x480 的白底古风诗词海报。字要大一点，正文要清楚易读，文字是画面重点。画面简洁，留白多一点。
 
 标题：《${selectedPoem.title}》
 作者：${selectedPoem.author}
