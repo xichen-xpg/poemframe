@@ -27,6 +27,10 @@ function getArgValue(name) {
   return null;
 }
 
+function getPositionalWorks() {
+  return process.argv.slice(2).filter((arg) => !arg.startsWith("--"));
+}
+
 function normalizeLookupValue(value) {
   return value.replace(/\s+/g, "").replace(/[《》]/g, "").toLowerCase();
 }
@@ -59,17 +63,11 @@ const dayIndex = Math.floor(
   (Date.parse(`${todayKey}T00:00:00Z`) - Date.parse(`${rotationStartKey}T00:00:00Z`)) / 86400000
 );
 const poemIndex = ((dayIndex % gaokaoPoems.length) + gaokaoPoems.length) % gaokaoPoems.length;
-const requestedWorks = (process.env.POEM_WORKS ?? getArgValue("--work") ?? "")
+const requestedWorks = (process.env.POEM_WORKS ?? getArgValue("--work") ?? getPositionalWorks().join(","))
   .split(",")
   .map((name) => name.trim())
   .filter(Boolean);
-const priorityPoems = gaokaoPoems.filter((poem) => poem.priority === true);
-const selectedPoems =
-  requestedWorks.length > 0
-    ? requestedWorks.map(findPoemByName)
-    : priorityPoems.length > 0
-      ? [priorityPoems[0]]
-      : [gaokaoPoems[poemIndex]];
+const selectedPoems = requestedWorks.length > 0 ? requestedWorks.map(findPoemByName) : [gaokaoPoems[poemIndex]];
 const shouldWriteDailyOutput =
   requestedWorks.length === 0 || process.env.UPDATE_DAILY_OUTPUT === "1" || process.argv.includes("--update-daily");
 
