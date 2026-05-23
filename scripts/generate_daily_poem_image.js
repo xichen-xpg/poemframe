@@ -46,14 +46,20 @@ function findPoemByName(name) {
   return poem;
 }
 
+const now = new Date();
 const dateParts = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Dubai",
   year: "numeric",
   month: "2-digit",
   day: "2-digit"
-}).formatToParts(new Date());
+}).formatToParts(now);
 const dateValue = Object.fromEntries(dateParts.map((part) => [part.type, part.value]));
 const todayKey = `${dateValue.year}-${dateValue.month}-${dateValue.day}`;
+const weekdayName = new Intl.DateTimeFormat("zh-CN", {
+  timeZone: "Asia/Dubai",
+  weekday: "long"
+}).format(now);
+const todayDisplay = `${Number(dateValue.year)}年${Number(dateValue.month)}月${Number(dateValue.day)}日 ${weekdayName}`;
 const rotationStartKey = process.env.POEM_ROTATION_START_DATE ?? "2026-05-20";
 const dayIndex = Math.floor(
   (Date.parse(`${todayKey}T00:00:00Z`) - Date.parse(`${rotationStartKey}T00:00:00Z`)) / 86400000
@@ -87,8 +93,9 @@ function createPrompt(selectedPoem) {
     .join("\n");
 
   return `
-帮我给这首古诗文及其译文生成一张 800x480 的白底古风设计感海报。另外联网获取今日日期，在海报上显示今天是几年几月几日，星期几。风格典雅克制，极简高级，整体避免极细线条。标题竖排，正文字要大一点。如果正文字数超过100汉字，就不要译文。
+帮我给这首古诗文及其译文生成一张 800x480 的白底古风设计感海报。在海报上原样显示下方提供的日期文字，不要改写也不要自行推断。风格典雅克制，极简高级，整体避免极细线条。标题竖排，正文字要大一点。
 
+日期（请原样书写）：${todayDisplay}
 标题：《${selectedPoem.title}》
 作者：${selectedPoem.author}
 正文：
