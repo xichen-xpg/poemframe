@@ -46,20 +46,14 @@ function findPoemByName(name) {
   return poem;
 }
 
-const now = new Date();
 const dateParts = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Dubai",
   year: "numeric",
   month: "2-digit",
   day: "2-digit"
-}).formatToParts(now);
+}).formatToParts(new Date());
 const dateValue = Object.fromEntries(dateParts.map((part) => [part.type, part.value]));
 const todayKey = `${dateValue.year}-${dateValue.month}-${dateValue.day}`;
-const weekdayName = new Intl.DateTimeFormat("zh-CN", {
-  timeZone: "Asia/Dubai",
-  weekday: "long"
-}).format(now);
-const todayDisplay = `${Number(dateValue.year)}年${Number(dateValue.month)}月${Number(dateValue.day)}日 ${weekdayName}`;
 const rotationStartKey = process.env.POEM_ROTATION_START_DATE ?? "2026-05-20";
 const dayIndex = Math.floor(
   (Date.parse(`${todayKey}T00:00:00Z`) - Date.parse(`${rotationStartKey}T00:00:00Z`)) / 86400000
@@ -93,9 +87,8 @@ function createPrompt(selectedPoem) {
     .join("\n");
 
   return `
-帮我给这首古诗文生成一张 800x480 的白底古风设计感海报，合理排版布局，所有内容的字号均不小于14号字，保证全文及译文的可读性。显示下方提供的日期文字。风格典雅克制，极简高级，整体避免极细线条。标题竖排。必需包含译文，译文长度不超过 60 个汉字。
+帮我给这首古诗文生成一张 800x480 的白底古风设计感海报，合理排版布局。风格典雅克制，极简高级，整体避免极细线条。标题竖排。必需包含译文，译文长度不超过 60 个汉字，译文字号约为正文的 80%。若版面拥挤，可使用上下排版，上面是诗名和正文，下面是译文。
 
-日期（请原样书写）：${todayDisplay}
 标题：《${selectedPoem.title}》
 作者：${selectedPoem.author}
 正文：
