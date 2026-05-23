@@ -87,7 +87,7 @@ function createPrompt(selectedPoem) {
     .join("\n");
 
   return `
-帮我给这首古诗文及其译文生成一张 800x480 的白底古风设计感海报。标题竖排，正文字要大一点。如果正文字数超过80汉字，就不要译文。
+帮我给这首古诗文及其译文生成一张 800x480 的白底古风设计感海报。风格典雅克制，极简高级。标题竖排，正文字要大一点。如果正文字数超过80汉字，就不要译文。
 
 标题：《${selectedPoem.title}》
 作者：${selectedPoem.author}
